@@ -133,6 +133,17 @@ good to put in that `clojure.properties` file.
 Neko will build all Java sources you have placed in `src/java` before any
 Clojure sources.
 
+=== Build neko itself ===
+
+neko uses https://github.com/clojure-android/lein-droid[lein-droid]
+
++lein droid jar+
+
+[WARNING]
+Make sure the +[:android :target-version]+ specified in
++neko/project.clj+ matches your Android SDK version. Run +lein clean+
+before +lein droid jar+ if still having difficulty.
+
 
 Legal information
 -----------------
