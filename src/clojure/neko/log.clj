@@ -21,7 +21,7 @@
   class with the tag given in the deflog macro call.
 
   For example, given the above deflog call,
-  
+
     (log-d \"Some log string\")
 
   is equivalent to:
@@ -31,6 +31,7 @@
   Calls to log-wtf on platforms that do not support Log.wtf() will be
   downgraded to Log.e() calls."
   {:author "Daniel Solano Gómez"}
+  (:require neko.context)
   (:import android.util.Log))
 
 (defmacro deflogfn
@@ -44,15 +45,17 @@
      ([^String tag#, ^String, message#, ^Throwable throwable#]
       (. Log (~method-name tag# message# throwable#)))))
 
-(deflogfn log-debug "Sends a DEBUG log message." d)
+(deflogfn d "Sends a DEBUG log message." d)
+(deflogfn e "Sends a ERROR log message." e)
+(deflogfn i "Sends a INFO log message." i)
+(deflogfn v "Sends a VERBOSE log message." v)
+(deflogfn w "Sends a WARN log message." w)
 
-(deflogfn log-error "Sends a ERROR log message." e)
-
-(deflogfn log-info "Sends a INFO log message." i)
-
-(deflogfn log-verbose "Sends a VERBOSE log message." v)
-
-(deflogfn log-warn "Sends a WARN log message." w)
+(defn log-exception
+  "Takes a Throwable instance and logs its stacktrace with error priority."
+  [throwable]
+  (e (.getPackageName neko.context/context)
+     (android.util.Log/getStackTraceString throwable)))
 
 (defmacro deflog
   "Creates a number of logging functions for the given tag."
@@ -63,8 +66,8 @@
                    (-> (partial ~log-fn ~tag)
                        (with-meta  {:private true}))))]
     `(do
-       ~(intern-logger "log-d" `log-debug)
-       ~(intern-logger "log-e" `log-error)
-       ~(intern-logger "log-i" `log-info)
-       ~(intern-logger "log-v" `log-verbose)
-       ~(intern-logger "log-w" `log-warn))))
+       ~(intern-logger "log-d" `d)
+       ~(intern-logger "log-e" `e)
+       ~(intern-logger "log-i" `i)
+       ~(intern-logger "log-v" `v)
+       ~(intern-logger "log-w" `w))))

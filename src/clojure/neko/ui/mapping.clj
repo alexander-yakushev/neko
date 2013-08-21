@@ -14,30 +14,40 @@
   actual UI classes, define the hierarchy relations between the
   elements and the values for the keywords representing values."
   (:require [clojure.string :as string])
-  (:use [neko.-utils :only [keyword->static-field]])
-  (:import [android.widget LinearLayout Button EditText ListView]
+  (:use [neko.-utils :only [keyword->static-field reflect-field]])
+  (:import [android.widget LinearLayout Button EditText ListView SearchView]
            android.app.ProgressDialog
-           [android.view ViewGroup$LayoutParams]))
+           [android.view View ViewGroup$LayoutParams]))
 
 ;; This atom keeps all the relations inside the map.
 (def ^{:private true} keyword-mapping
   (atom
    ;; UI widgets
-   {:view {:traits [:def :layout-params :text :on-click :on-long-click :on-touch
-                    :on-create-context-menu :on-key :id]}
+   {:view {:traits [:def :layout-params :on-click :on-long-click :on-touch
+                    :on-create-context-menu :on-key :id :padding]
+           :value-namespaces
+           {:text-alignment View
+            :text-direction View
+            :visibility View}}
     :view-group {:inherits :view
-                 :traits [:id-holder]}
+                 :traits [:container :id-holder]}
     :button {:classname android.widget.Button
-             :inherits :view
+             :inherits :text-view
              :attributes {:text "Default button"}}
     :linear-layout {:classname android.widget.LinearLayout
                     :inherits :view-group}
     :edit-text {:classname android.widget.EditText
                 :inherits :view}
     :text-view {:classname android.widget.TextView
-                :inherits :view}
+                :inherits :view
+                :value-namespaces
+                {:ellipsize android.text.TextUtils$TruncateAt}
+                :traits [:text :text-size]}
     :list-view {:classname android.widget.ListView
                 :inherits :view-group}
+    :search-view {:classname android.widget.SearchView
+                  :inherits :view-group
+                  :traits [:on-query-text]}
 
     ;; Other
     :layout-params {:classname ViewGroup$LayoutParams
@@ -48,10 +58,20 @@
                                :spinner ProgressDialog/STYLE_SPINNER}}
     }))
 
+(def ^{:private true} reverse-mapping
+  (atom
+   {android.widget.Button :button
+    android.widget.LinearLayout :linear-layout
+    android.widget.EditText :edit-text
+    android.widget.TextView :text-view
+    android.widget.ListView :list-view
+    android.app.ProgressDialog :progress-dialog}))
+
 (defn set-classname!
   "Connects the given keyword to the classname."
   [kw classname]
-  (swap! keyword-mapping assoc-in [kw :classname] classname))
+  (swap! keyword-mapping assoc-in [kw :classname] classname)
+  (swap! reverse-mapping assoc-in classname kw))
 
 (defn classname
   "Gets the classname from the keyword-mapping map if the argument is
@@ -63,6 +83,11 @@
         (throw (Exception. (str "The class for " classname-or-kw
                                 " isn't present in the mapping."))))
     classname-or-kw))
+
+(defn keyword-by-classname
+  "Returns a keyword name for the given UI widget classname."
+  [classname]
+  (@reverse-mapping classname))
 
 (defn add-trait!
   "Defines the `kw` to implement trait specified with `trait-kw`."
@@ -84,22 +109,37 @@
   [element-kw value-kw value]
   (swap! keyword-mapping assoc-in [element-kw :values value-kw] value))
 
+(defn- recursive-find
+  "Searches in the keyword mapping for a value denoted by a list of
+  keys. If value is not found, tries searching in a parent."
+  [[element-kw & other :as keys]]
+  (if element-kw
+    (or (get-in @keyword-mapping keys)
+        (recur (cons (get-in @keyword-mapping [element-kw :inherits]) other)))))
+
 (defn value
   "If the value is a keyword then returns the value for it from the
   keyword-mapping. The value is sought in the element itself and all
   its parents. If the value-keyword isn't present in any element's
   keyword-mapping, form the value as
-  `classname-for-element-kw/CAPITALIZED-VALUE-KW`."
-  [element-kw value]
-  (let [mapping @keyword-mapping
-        recursive-find (fn [kw]
-                         (when kw
-                           (or (get-in mapping [kw :values value])
-                               (recur (get-in mapping [kw :inherits])))))]
+  `classname-for-element-kw/CAPITALIZED-VALUE-KW`. Classname for
+  keyword can be extracted from :value-namespaces map for element's
+  mapping."
+  [element-kw value & [attribute]]
+  (let [mapping @keyword-mapping]
     (if-not (keyword? value)
-      value
-      (or (recursive-find element-kw)
-          (keyword->static-field (classname element-kw) value)))))
+      (cond
+       (integer? value) (int value)
+       (float? value) (float value)
+       :else value)
+      (or (recursive-find (list element-kw :values value))
+          (reflect-field
+           (classname
+            (or (and attribute
+                     (recursive-find (list element-kw
+                                           :value-namespaces attribute)))
+                element-kw))
+           (keyword->static-field value))))))
 
 (defn add-default-atribute-value!
   "Adds a default attribute value for the given element."
@@ -107,7 +147,7 @@
   (swap! keyword-mapping
          update-in [element-kw :attributes attribute-kw] value))
 
-(defn default-attributes [element-kw]
+(defn default-attributes
   "Returns a map of default attributes for the given element keyword
   and all its parents."
   [element-kw]
@@ -124,5 +164,10 @@
 
   Optional arguments
   - :classname, :inherits, :traits, :values, :attributes. "
-  [kw-name & args]
-  (swap! keyword-mapping assoc kw-name (apply hash-map args)))
+  [kw-name & {:as args}]
+  (swap! keyword-mapping assoc kw-name
+         (if-not (contains? args :inherits)
+           (assoc args :inherits :view)
+           args))
+  (if-let [classname (:classname args)]
+    (swap! reverse-mapping assoc classname kw-name)))
