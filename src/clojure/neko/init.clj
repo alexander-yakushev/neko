@@ -45,6 +45,14 @@
             options/*start-nrepl-server*)
     `(apply start-repl :port ~port ~other-args)))
 
+(defn enable-compliment-sources
+  "Initializes compliment sources if theirs namespaces are present."
+  []
+  (try (require 'neko.compliment.android-resources)
+       ((resolve 'neko.compliment.android-resources/init-source))
+       ((resolve 'neko.compliment.ui-widgets-and-attributes/init-source))
+       (catch Exception ex nil)))
+
 (defn init
   "Initializes neko library.
 
@@ -57,4 +65,5 @@
               :as args}]
   (enable-dynamic-compilation context classes-dir)
   ;; Ensure that `:port` is provided, pass all other arguments as-is.
-  (start-nrepl-server port (mapcat identity (dissoc args :classes-dir :port))))
+  (start-nrepl-server port (mapcat identity (dissoc args :classes-dir :port)))
+  (enable-compliment-sources))
