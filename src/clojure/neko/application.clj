@@ -10,11 +10,10 @@
 ; this software.
 
 (ns neko.application
-  "Contains tools to create and manipulate Application instances."
-  (:require neko.context neko.init)
-  (:use [neko.-utils :only [simple-name]]
-        [neko.resource :only [package-name]]
-        [neko.threading :only [init-threading]])
+  "Contains tools to create and manipulate Application instances. This
+  namespace is deprecated and exists only for backward compatibility
+  purposes."
+  (:require neko.init)
   (:import android.app.Application
            android.content.Context))
 
@@ -25,13 +24,7 @@
   `init-application`.")))
 
 (defn init-application
-  "Performs necessary preparations for Neko and REPL development."
-  [context & {:keys [extends prefix on-create nrepl-port]
-              :or {extends android.app.Application
-                   prefix (str (simple-name name) "-")}}]
-  (alter-var-root #'neko.context/context (constantly context))
-  (alter-var-root #'package-name (constantly (.getPackageName context)))
-  (neko.init/init context :port (or nrepl-port 9999))
-  (init-threading))
-
-
+  "DEPRECATED: Performs necessary preparations for Neko and REPL
+  development. You should call `neko.init/init` instead."
+  [context]
+  (neko.init/init context))

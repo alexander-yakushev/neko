@@ -17,10 +17,14 @@
             [neko.listeners.view :as view-listeners]
             neko.listeners.search-view)
   (:use [neko.-utils :only [memoized]])
-  (:import [android.widget LinearLayout$LayoutParams TextView SearchView]
+  (:import [android.widget LinearLayout$LayoutParams TextView SearchView
+            ImageView RelativeLayout RelativeLayout$LayoutParams]
            [android.view View ViewGroup$LayoutParams]
+           android.graphics.Bitmap android.graphics.drawable.Drawable
+           android.net.Uri
            android.util.TypedValue
-           java.util.HashMap))
+           java.util.HashMap
+           clojure.lang.Keyword))
 
 ;; ## Infrastructure for traits and attributes
 
@@ -49,7 +53,7 @@ next-level elements."
   (fn [trait widget attributes-map options-map]
     trait))
 
-(defn- add-attributes-to-meta
+(defn add-attributes-to-meta
   "Appends information about attribute to trait mapping to `meta`."
   [meta attr-list trait]
   (reduce (fn [m att]
@@ -83,16 +87,17 @@ next-level elements."
         [param-map args] (if (map? (first args))
                            [(first args) (next args)]
                            [{} args])
+        attrs-sym (gensym "attributes")
         match-pred (cond (:applies? param-map)
                          (:applies? param-map)
 
                          (:attributes param-map)
-                         `(fn [kw#] (some kw# ~(:attributes param-map)))
+                         `(some ~attrs-sym ~(:attributes param-map))
 
-                         :else name)
-        codegen-body args
+                         :else `(~name ~attrs-sym))
+        [arglist & codegen-body] args
         dissoc-fn (if (:attributes param-map)
-                    `(fn [a#] (dissoc a# ~@(:attributes param-map)))
+                    `(fn [a#] (apply dissoc a# ~(:attributes param-map)))
                     `(fn [a#] (dissoc a# ~name)))]
     `(do
        (alter-meta! #'apply-trait
@@ -102,18 +107,27 @@ next-level elements."
                           (add-attributes-to-meta
                            (or ~(:attributes param-map) [~name]) ~name))))
        (defmethod apply-trait ~name
-         [trait# widget# attributes# options#]
-         (if (~match-pred attributes#)
-           (let [result# ((fn ~@codegen-body) widget# attributes# options#)
-                 attr-fn# ~dissoc-fn]
-             (if (map? result#)
-               [(:attributes-fn result# attr-fn#)
-                (:options-fn result# identity)]
-               [attr-fn# identity]))
-           [identity identity])))))
+         [trait# widget# ~attrs-sym options#]
+         (let [~arglist [widget# ~attrs-sym options#]]
+           (if ~match-pred
+             (let [result# (do ~@codegen-body)
+                   attr-fn# ~dissoc-fn]
+               (if (map? result#)
+                 [(:attributes-fn result# attr-fn#)
+                  (:options-fn result# identity)]
+                 [attr-fn# identity]))
+             [identity identity]))))))
 
 (alter-meta! #'deftrait
              assoc :arglists '([name docstring? match-pred? [params*] body]))
+
+;; ## Utility functions
+
+(defn to-id
+  "Makes an ID from arbitrary object by calling .hashCode on it.
+  Returns the absolute value."
+  [obj]
+  (Math/abs (.hashCode ^Object obj)))
 
 ;; ## Implementation of different traits
 
@@ -166,38 +180,96 @@ next-level elements."
   [^TextView wdg, {:keys [text-size]} _]
   (.setTextSize wdg (to-dimension text-size)))
 
+(deftrait :image
+  "Takes `:image` attribute which can be a resource ID, resource
+  keyword, Drawable, Bitmap or URI and sets it ImageView widget's
+  image source." [^ImageView wdg, {:keys [image]} _]
+  (condp instance? image
+    Bitmap (.setImageBitmap wdg image)
+    Drawable (.setImageDrawable wdg image)
+    Keyword (.setImageDrawable wdg (neko.resource/get-drawable image))
+    Uri (.setImageURI wdg image)
+    ;; Otherwise assume `image` to be resource ID.
+    :else (.setImageResource wdg image)))
+
 ;; ### Layout parameters attributes
 
-(defn- default-layout-params
-  "Construct LayoutParams instance from the given arguments. Arguments
-  could be either actual values or keywords `:fill` and `:wrap`."
-  [width height]
-  (ViewGroup$LayoutParams. ^int (kw/value :layout-params (or width :wrap))
-                           ^int (kw/value :layout-params (or height :wrap))))
+(deftrait :default-layout-params
+  "Takes `:layout-width` and `:layout-height` attributes and sets
+   LayoutParams, if the container type is not specified."
+  {:attributes [:layout-width :layout-height]
+   :applies? (nil? container-type)}
+  [^View wdg, {:keys [layout-width layout-height]} {:keys [container-type]}]
+  (let [^int width  (kw/value :layout-params (or layout-width  :wrap))
+        ^int height (kw/value :layout-params (or layout-height :wrap))]
+   (.setLayoutParams wdg (ViewGroup$LayoutParams. width height))))
 
-(defn- linear-layout-params
-  "Construct LinearLayout-specific LayoutParams instance from the
-  given arguments. Arguments could be either actual values or keywords
-  `:fill` and `:wrap`."
-  [width height weight]
-  (LinearLayout$LayoutParams. (kw/value :layout-params (or width :wrap))
-                              (kw/value :layout-params (or height :wrap))
-                              (or weight 0)))
-
-(deftrait :layout-params
+(deftrait :linear-layout-params
   "Takes `:layout-width`, `:layout-height` and `:layout-weight`
-  attributes and sets a proper LayoutParams according to container
-  type."
-  {:attributes [:layout-width :layout-height :layout-weight]}
+  attributes and sets LinearLayout.LayoutParams if current container
+  is LinearLayout. Values could be either numbers of `:fill` or
+  `:wrap`."
+  {:attributes [:layout-width :layout-height :layout-weight]
+   :applies? (= (kw/keyword-by-classname container-type) :linear-layout)}
   [^View wdg, {:keys [layout-width layout-height layout-weight]}
    {:keys [container-type]}]
-  (case (kw/keyword-by-classname container-type)
-    :linear-layout
-    (.setLayoutParams
-     wdg (linear-layout-params layout-width layout-height layout-weight))
+  (let [width  (kw/value :layout-params (or layout-width  :wrap))
+        height (kw/value :layout-params (or layout-height :wrap))
+        weight (or layout-weight 0)]
+    (.setLayoutParams wdg (LinearLayout$LayoutParams. width height weight))))
 
-    (.setLayoutParams
-     wdg (default-layout-params layout-width layout-height))))
+;; #### Relative layout
+
+(def ^:private relative-layout-attributes
+  ;; Hard-coded number values are attributes that appeared since
+  ;; Android Jellybean.
+  {:standalone {:layout-align-parent-bottom  RelativeLayout/ALIGN_PARENT_BOTTOM
+                :layout-align-parent-end     21 ; RelativeLayout/ALIGN_PARENT_END
+                :layout-align-parent-left    RelativeLayout/ALIGN_PARENT_LEFT
+                :layout-align-parent-right   RelativeLayout/ALIGN_PARENT_RIGHT
+                :layout-align-parent-start   20 ; RelativeLayout/ALIGN_PARENT_START
+                :layout-align-parent-top     RelativeLayout/ALIGN_PARENT_TOP
+                :layout-center-horizontal    RelativeLayout/CENTER_HORIZONTAL
+                :layout-center-vertical      RelativeLayout/CENTER_VERTICAL
+                :layout-center-in-parent     RelativeLayout/CENTER_IN_PARENT}
+   :with-id    {:layout-above                RelativeLayout/ABOVE
+                :layout-align-baseline       RelativeLayout/ALIGN_BASELINE
+                :layout-align-bottom         RelativeLayout/ALIGN_BOTTOM
+                :layout-align-end            19 ; RelativeLayout/ALIGN_END
+                :layout-align-left           RelativeLayout/ALIGN_LEFT
+                :layout-align-right          RelativeLayout/ALIGN_RIGHT
+                :layout-align-start          18 ; RelativeLayout/ALIGN_START
+                :layout-align-top            RelativeLayout/ALIGN_TOP
+                :layout-below                RelativeLayout/BELOW
+                :layout-to-end-of            17 ; RelativeLayout/END_OF
+                :layout-to-left-of           RelativeLayout/LEFT_OF
+                :layout-to-right-of          RelativeLayout/RIGHT_OF
+                :layout-to-start-of          16 ; RelativeLayout/START_OF
+                }})
+
+(def ^:private all-relative-attributes
+  (apply concat [:layout-width :layout-height
+                 :layout-align-with-parent-if-missing]
+         (map keys (vals relative-layout-attributes))))
+
+(deftrait :relative-layout-params
+  {:attributes all-relative-attributes
+   :applies? (= (kw/keyword-by-classname container-type) :relative-layout)}
+  [^View wdg, {:keys [layout-width layout-height
+                      layout-align-with-parent-if-missing] :as attributes}
+   {:keys [container-type]}]
+  (let [width  (kw/value :layout-params (or layout-width  :wrap))
+        height (kw/value :layout-params (or layout-height :wrap))
+        lp (RelativeLayout$LayoutParams. width height)]
+    (when-not (nil? layout-align-with-parent-if-missing)
+      (set! (. lp alignWithParent) layout-align-with-parent-if-missing))
+    (doseq [[attr-name attr-id] (:standalone relative-layout-attributes)]
+      (when (= (attr-name attributes) true)
+        (.addRule lp attr-id)))
+    (doseq [[attr-name attr-id] (:with-id relative-layout-attributes)]
+      (when (contains? attributes attr-name)
+        (.addRule lp attr-id (to-id (attr-name attributes)))))
+    (.setLayoutParams wdg lp)))
 
 (deftrait :padding
   "Takes `:padding`, `:padding-bottom`, `:padding-left`,
@@ -302,11 +374,6 @@ next-level elements."
   [^View wdg, _ __]
   (.setTag wdg (HashMap.))
   {:options-fn #(assoc % :id-holder wdg)})
-
-(defn to-id
-  "Makes an ID from arbitrary object by calling .hashCode on it."
-  [obj]
-  (.hashCode ^Object obj))
 
 (deftrait :id
   "Takes `:id` attribute, which can either be an integer or a

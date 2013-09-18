@@ -15,7 +15,8 @@
   elements and the values for the keywords representing values."
   (:require [clojure.string :as string])
   (:use [neko.-utils :only [keyword->static-field reflect-field]])
-  (:import [android.widget LinearLayout Button EditText ListView SearchView]
+  (:import [android.widget LinearLayout Button EditText ListView SearchView
+            ImageView ImageView$ScaleType RelativeLayout]
            android.app.ProgressDialog
            [android.view View ViewGroup$LayoutParams]))
 
@@ -23,8 +24,10 @@
 (def ^{:private true} keyword-mapping
   (atom
    ;; UI widgets
-   {:view {:traits [:def :layout-params :on-click :on-long-click :on-touch
-                    :on-create-context-menu :on-key :id :padding]
+   {:view {:traits [:def :id :padding :on-click :on-long-click :on-touch
+                    :on-create-context-menu :on-key
+                    :default-layout-params :linear-layout-params
+                    :relative-layout-params]
            :value-namespaces
            {:text-alignment View
             :text-direction View
@@ -36,6 +39,8 @@
              :attributes {:text "Default button"}}
     :linear-layout {:classname android.widget.LinearLayout
                     :inherits :view-group}
+    :relative-layout {:classname android.widget.RelativeLayout
+                      :inherits :view-group}
     :edit-text {:classname android.widget.EditText
                 :inherits :view}
     :text-view {:classname android.widget.TextView
@@ -48,6 +53,11 @@
     :search-view {:classname android.widget.SearchView
                   :inherits :view-group
                   :traits [:on-query-text]}
+    :image-view {:classname android.widget.ImageView
+                 :inherits :view
+                 :traits [:image]
+                 :value-namespaces
+                 {:scale-type android.widget.ImageView$ScaleType}}
 
     ;; Other
     :layout-params {:classname ViewGroup$LayoutParams
@@ -67,6 +77,7 @@
   (atom
    {android.widget.Button :button
     android.widget.LinearLayout :linear-layout
+    android.widget.RelativeLayout :relative-layout
     android.widget.EditText :edit-text
     android.widget.TextView :text-view
     android.widget.ListView :list-view
