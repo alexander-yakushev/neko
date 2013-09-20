@@ -18,7 +18,7 @@
   (:import [android.widget LinearLayout Button EditText ListView SearchView
             ImageView ImageView$ScaleType RelativeLayout]
            android.app.ProgressDialog
-           [android.view View ViewGroup$LayoutParams]))
+           [android.view View ViewGroup$LayoutParams Gravity]))
 
 ;; This atom keeps all the relations inside the map.
 (def ^{:private true} keyword-mapping
@@ -38,7 +38,9 @@
              :inherits :text-view
              :attributes {:text "Default button"}}
     :linear-layout {:classname android.widget.LinearLayout
-                    :inherits :view-group}
+                    :inherits :view-group
+                    :value-namespaces
+                    {:gravity android.view.Gravity}}
     :relative-layout {:classname android.widget.RelativeLayout
                       :inherits :view-group}
     :edit-text {:classname android.widget.EditText
@@ -62,7 +64,9 @@
     ;; Other
     :layout-params {:classname ViewGroup$LayoutParams
                     :values {:fill ViewGroup$LayoutParams/FILL_PARENT
-                             :wrap ViewGroup$LayoutParams/WRAP_CONTENT}}
+                             :wrap ViewGroup$LayoutParams/WRAP_CONTENT}
+                    :value-namespaces
+                    {:gravity android.view.Gravity}}
     :progress-dialog {:classname android.app.ProgressDialog
                       :values {:horizontal ProgressDialog/STYLE_HORIZONTAL
                                :spinner ProgressDialog/STYLE_SPINNER}}
