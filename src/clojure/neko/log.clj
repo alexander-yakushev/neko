@@ -10,35 +10,18 @@
 ; this software.
 
 (ns neko.log
-  "Utility for logging in Android.  To use this utility simply use the deflog
-  macro as follows:
+  "Utility for logging in Android. 
 
-    (deflog \"MyTag\")
-
-  This will intern a number of functions in your namespace, namely: log-d,
-  log-v, log-i, log-w, log-e, and log-wtf.  These functions will perform the
-  equivalent of calling the corresponding method on the android.util.Log
-  class with the tag given in the deflog macro call.
-
-  For example, given the above deflog call,
-
-    (log-d \"Some log string\")
+    (log-e \"Some log string\" x \"!\" :exception error)
 
   is equivalent to:
 
-    (android.util.Log/d \"MyTag\" \"Some log string\")
+    (android.util.Log/d \"current.namespace\" (pr-str \"Some log string: \" x \"!\") error)
 
-  Calls to log-wtf on platforms that do not support Log.wtf() will be
-  downgraded to Log.e() calls."
+  Where the :exception is entirely optional."
   {:author "Daniel Solano Gómez"}
   (:require neko.context)
   (:import android.util.Log))
-
-(defn log*
-  [log-fn tag ex-or-msg & args]
-  (if (instance? Throwable ex-or-msg)
-    (log-fn tag ex-or-msg (apply pr-str args))
-    (log-fn tag (apply pr-str ex-or-msg args))))
 
 (defmacro deflogfn
   "Macro for generating log functions."
@@ -47,9 +30,11 @@
   `(defn ~fn-name
      ~doc-string
      ([^String tag#, ^String message#]
-      (. Log (~method-name tag# message#)))
+        (. Log (~method-name tag# message#))
+        nil)
      ([^String tag#, ^String, message#, ^Throwable throwable#]
-      (. Log (~method-name tag# message# throwable#)))))
+        (. Log (~method-name tag# message# throwable#))
+        nil)))
 
 (deflogfn d "Sends a DEBUG log message." d)
 (deflogfn e "Sends a ERROR log message." e)
@@ -57,19 +42,71 @@
 (deflogfn v "Sends a VERBOSE log message." v)
 (deflogfn w "Sends a WARN log message." w)
 
+(defn- isnt-any-of [& args]
+  (let [args (set args)]
+      (fn [x] (not (contains? args x)))))
+
+(defn- logger [logfn args]  
+  (let [[strings {:keys [exception tag]}] (split-with (isnt-any-of :exception :tag) args)]
+    (if exception
+      (list logfn
+            (list 'clojure.core/or tag (list 'clojure.core/str 'clojure.core/*ns*))
+            (concat (list 'clojure.core/pr-str) strings)
+            exception)
+      (list logfn
+            (list 'clojure.core/or tag (list 'clojure.core/str 'clojure.core/*ns*))
+            (concat (list 'clojure.core/pr-str) strings)))))
+
+(defmacro log-e
+  "Log an ERROR message, applying pr-str to all the arguments and taking
+   an optional keyword :exception or :tag at the end which will print the
+   exception stacktrace or override the TAG respectively"
+  [& args] (logger e args))
+
+(defmacro log-d
+  "Log a DEBUG message, applying pr-str to all the arguments and taking
+   an optional keyword :exception or :tag at the end which will print the
+   exception stacktrace or override the TAG respectively"
+  [& args] (logger d args))
+
+(defmacro log-i
+  "Log an INFO message, applying pr-str to all the arguments and taking
+   an optional keyword :exception or :tag at the end which will print the
+   exception stacktrace or override the TAG respectively"
+  [& args] (logger i args))
+
+(defmacro log-v
+  "Log a VERBOSE message, applying pr-str to all the arguments and taking
+   an optional keyword :exception or :tag at the end which will print the
+   exception stacktrace or override the TAG respectively"
+  [& args] (logger v args))
+
+(defmacro log-w
+  "Log a WARN message, applying pr-str to all the arguments and taking
+   an optional keyword :exception or :tag at the end which will print the
+   exception stacktrace or override the TAG respectively"
+  [& args] (logger w args))
+
+
+;;; DEPRECATED FUNCTIONALITY RETAINED FOR BACK COMPATIBILITY:
+
+;;; Functionality can be reproduced with other logging functions:
 (defn log-exception
   "Takes a Throwable instance and logs its stacktrace with error priority."
   [throwable]
   (e (.getPackageName neko.context/context)
      (android.util.Log/getStackTraceString throwable)))
 
+;;; Candidate for complete removal, pollutes namespaces and encourages
+;;; inconsistent tags
 (defmacro deflog
-  "Creates a number of logging functions for the given tag."
-  [tag]
+  "DEPRECATED - do not use! Creates a number of logging functions for the given tag."
+  {:deprecated "3.0.0"}
+  [tag]  
   (let [intern-logger
         (fn [log-name log-fn]
           `(intern *ns* (symbol ~log-name)
-                   (with-meta (partial log* ~log-fn ~tag) {:private true})))]
+                   (with-meta (partial ~log-fn ~tag) {:private true})))]
     `(do
        ~(intern-logger "log-d" `d)
        ~(intern-logger "log-e" `e)
