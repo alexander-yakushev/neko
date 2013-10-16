@@ -34,6 +34,12 @@
   (:require neko.context)
   (:import android.util.Log))
 
+(defn log*
+  [log-fn tag ex-or-msg & args]
+  (if (instance? Throwable ex-or-msg)
+    (log-fn tag ex-or-msg (apply pr-str args))
+    (log-fn tag (apply pr-str ex-or-msg args))))
+
 (defmacro deflogfn
   "Macro for generating log functions."
   {:private true}
@@ -63,8 +69,7 @@
   (let [intern-logger
         (fn [log-name log-fn]
           `(intern *ns* (symbol ~log-name)
-                   (-> (partial ~log-fn ~tag)
-                       (with-meta  {:private true}))))]
+                   (with-meta (partial log* ~log-fn ~tag) {:private true})))]
     `(do
        ~(intern-logger "log-d" `d)
        ~(intern-logger "log-e" `e)
