@@ -47,14 +47,15 @@
       (fn [x] (not (contains? args x)))))
 
 (defn- logger [logfn args]  
-  (let [[strings {:keys [exception tag]}] (split-with (isnt-any-of :exception :tag) args)]
+  (let [[strings {:keys [exception tag]}] (split-with (isnt-any-of :exception :tag) args)
+        my-ns (str *ns*)]
     (if exception
       (list logfn
-            (list 'clojure.core/or tag (list 'clojure.core/str 'clojure.core/*ns*))
+            (list 'clojure.core/or tag my-ns)
             (concat (list 'clojure.core/pr-str) strings)
             exception)
       (list logfn
-            (list 'clojure.core/or tag (list 'clojure.core/str 'clojure.core/*ns*))
+            (list 'clojure.core/or tag my-ns)
             (concat (list 'clojure.core/pr-str) strings)))))
 
 (defmacro log-e
