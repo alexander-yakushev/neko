@@ -12,7 +12,7 @@
 (ns neko.log
   "Utility for logging in Android. 
 
-    (log-e \"Some log string\" x \"!\" :exception error)
+    (neko.log/e \"Some log string\" x \"!\" :exception error)
 
   is equivalent to:
 
