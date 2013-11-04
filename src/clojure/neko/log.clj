@@ -63,3 +63,9 @@
    an optional keyword :exception or :tag at the end which will print the
    exception stacktrace or override the TAG respectively"
   [& args] (logger 'w args))
+
+(defn log-exception
+  "Takes a Throwable instance and logs its stacktrace with error priority."
+  [throwable]
+  (e (.getPackageName neko.context/context)
+     (android.util.Log/getStackTraceString throwable)))
