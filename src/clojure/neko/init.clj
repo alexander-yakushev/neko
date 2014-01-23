@@ -12,7 +12,9 @@
 (ns neko.init
   "Contains functions for neko initialization and setting runtime options."
   (:require [neko context log resource compilation threading])
-  (:import android.content.Context))
+  (:import android.content.Context
+           java.util.concurrent.atomic.AtomicLong
+           java.util.concurrent.ThreadFactory))
 
 (defmacro
   ^{:private true
@@ -25,6 +27,19 @@
             (::enable-dynamic-compilation *compiler-options*))
     `(neko.compilation/init ~context ~classes-dir)))
 
+(defn android-thread-factory
+  "Returns a new ThreadFactory suitable for use with android. This implementation
+   generates daemon threads, with names that include the session id."
+  [stack-size]
+  (let [session-thread-counter (AtomicLong. 0)]
+    (reify ThreadFactory
+      (newThread [_ runnable]
+        (doto (Thread. (.getThreadGroup (Thread/currentThread))
+                runnable
+                (format "nREPL-worker-%s" (.getAndIncrement session-thread-counter))
+                stack-size)
+          (.setDaemon true))))))
+
 (defn start-repl
   "Starts a remote nREPL server. Creates a `user` namespace because
   nREPL expects it to be there while initializing. References nrepl's
@@ -34,7 +49,8 @@
   (binding [*ns* (create-ns 'user)]
     (refer-clojure)
     (use 'clojure.tools.nrepl.server)
-    (apply (resolve 'start-server) repl-args)))
+    (with-redefs [clojure.tools.nrepl.middleware.interruptible-eval/configure-thread-factory (partial android-thread-factory 524288)]
+      (apply (resolve 'start-server) repl-args))))
 
 (defmacro
   ^{:private true
