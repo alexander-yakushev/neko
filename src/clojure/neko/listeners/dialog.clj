@@ -19,6 +19,7 @@
   "Takes a function and yields a DialogInterface.OnCancelListener object that
   will invoke the function.  This function must take one argument, the dialog
   that was canceled."
+  ^android.content.DialogInterface$OnCancelListener
   [handler-fn]
   (reify android.content.DialogInterface$OnCancelListener
     (onCancel [this dialog]
@@ -38,6 +39,7 @@
   dialog: the dialog that received the click
   which:  the button that was clicked (one of :negative, :neutral, or
           :positive) or the position of the item that was clicked"
+  ^android.content.DialogInterface$OnClickListener
   [handler-fn]
   (reify android.content.DialogInterface$OnClickListener
     (onClick [this dialog which]
@@ -63,6 +65,7 @@
   "Takes a function and yields a DialogInterface.OnDismissListener object that
   will invoke the function.  This function must take one argument, the dialog
   that was dismissed."
+  ^android.content.DialogInterface$OnDismissListener
   [handler-fn]
   (reify android.content.DialogInterface$OnDismissListener
     (onDismiss [this dialog]
@@ -85,6 +88,7 @@
 
   The function should evaluate to a logical true value if it has consumed the
   event, otherwise logical false."
+  ^android.content.DialogInterface$OnKeyListener
   [handler-fn]
   (reify android.content.DialogInterface$OnKeyListener
     (onKey [this dialog key-code event]
@@ -112,6 +116,7 @@
   dialog:   the dialog where the selection was made
   which:    the position of the item in the list that was clicked
   checked?: true if the click checked the item, else false"
+  ^android.content.DialogInterface$OnMultiChoiceClickListener
   [handler-fn]
   (reify android.content.DialogInterface$OnMultiChoiceClickListener
     (onClick [this dialog which checked?]

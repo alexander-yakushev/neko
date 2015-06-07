@@ -1,18 +1,17 @@
 * [[https://raw.githubusercontent.com/clojure-android/neko/master/doc/big_logo.png]]
 
-  Neko is a toolkit designed to make Android development using Clojure
-  easier and more fun. It accomplishes this by making adding Clojure
-  support to your Android project easy and providing functional
-  wrappers and alternatives to Android’s Java API.
+  Neko is a toolkit designed to make Android development using Clojure easier
+  and more fun. It provides different facilities that wrap Android's Java API
+  and are more idiomatic to use from Clojure. Neko does not try to wrap every
+  API class or method, as they are always accessible to a developer through
+  interop. Instead Neko only offers substitutes to Java API where it really
+  simplifies the development and gives better understanding of the code.
 
-  Neko was originally written by [[https://github.com/sattvik][Daniel Solano Gómez]]. This version is
-  a fork by Alexander Yakushev as part of Google Summer of Code
-  2012/2013 participation project.
+  Neko is developed under [[http://clojure-android.info/][Clojure-Android initiative]].
 
 ** Installation
 
-   Just add the following line to the dependencies of your
-   Clojure/Android project:
+   Add the following line to the dependencies of your Clojure/Android project:
 
    [[https://clojars.org/neko][https://clojars.org/neko/latest-version.svg]]
 
@@ -29,7 +28,7 @@
 
    Marginalia docs are available [[http://clojure-android.github.io/neko/][here]].
 
-** How to build Neko yourself
+** Building Neko
 
    If you want to modify/extend Neko source code and then use it in
    your applications, you can build it yourself. Use =lein droid jar=
@@ -45,19 +44,22 @@
 
 ** Acknowledgments
 
-   I thank Remco van 't Veer for his [[https://github.com/remvee/clj-android][clj-android]] library which was one
-   of the pioneer attempts to bring Clojure to Android development.
-   Some features in my Neko fork are inspired by ideas from his
+   Neko was originally written by [[https://github.com/sattvik][Daniel Solano Gómez]]. This version is a fork by
+   Alexander Yakushev as part of Google Summer of Code 2012/2013 participation
    project.
+
+   I thank Remco van 't Veer for his [[https://github.com/remvee/clj-android][clj-android]] library which was one of the
+   pioneer attempts to bring Clojure to Android development. Some features in my
+   Neko fork are inspired by ideas from his project.
 
    I also thank all the [[https://github.com/alexander-yakushev/neko/graphs/contributors][contributors]] to Neko.
 
-   Cat icon used in the logo is designed by [[http://www.freepik.com/][Freepik]]  from Flaticon.com.
+   Cat icon used in the logo is designed by [[http://www.freepik.com/][Freepik]] from Flaticon.com.
 
 ** Legal information
 
    Copyright © 2011-2013 Sattvik Software & Technology Resources, Ltd.
-   Co., Alexander Yakushev
+   Co., 2012-2015 Alexander Yakushev
 
    All rights reserved.
 

@@ -5,8 +5,10 @@
   (:require [clojure.string :as string])
   (:use [neko.-utils :only [keyword->static-field reflect-field]])
   (:import [android.widget LinearLayout Button EditText ListView SearchView
-            ImageView ImageView$ScaleType RelativeLayout ScrollView]
+            ImageView ImageView$ScaleType RelativeLayout ScrollView FrameLayout
+            Gallery]
            android.app.ProgressDialog
+           android.view.inputmethod.EditorInfo
            [android.view View ViewGroup$LayoutParams Gravity]))
 
 ;; This atom keeps all the relations inside the map.
@@ -17,7 +19,8 @@
            :traits [:def :id :padding :on-click :on-long-click :on-touch
                     :on-create-context-menu :on-key
                     :default-layout-params :linear-layout-params
-                    :relative-layout-params :listview-layout-params]
+                    :relative-layout-params :listview-layout-params
+                    :frame-layout-params :gallery-layout-params]
            :value-namespaces
            {:gravity android.view.Gravity}}
     :view-group {:inherits :view
@@ -29,8 +32,26 @@
                     :inherits :view-group}
     :relative-layout {:classname android.widget.RelativeLayout
                       :inherits :view-group}
+    :frame-layout {:classname android.widget.FrameLayout
+                   :inherits :view-group}
     :edit-text {:classname android.widget.EditText
-                :inherits :view}
+                :inherits :view
+                :values {:number      EditorInfo/TYPE_CLASS_NUMBER
+                         :datetime    EditorInfo/TYPE_CLASS_DATETIME
+                         :text        EditorInfo/TYPE_CLASS_TEXT
+                         :phone       EditorInfo/TYPE_CLASS_PHONE
+                         :go          EditorInfo/IME_ACTION_GO
+                         :done        EditorInfo/IME_ACTION_DONE
+                         :unspecified EditorInfo/IME_ACTION_UNSPECIFIED
+                         :send        EditorInfo/IME_ACTION_SEND
+                         :search      EditorInfo/IME_ACTION_SEARCH
+                         :previous    EditorInfo/IME_ACTION_PREVIOUS
+                         :next        EditorInfo/IME_ACTION_NEXT}}
+    :progress-bar {:classname android.widget.ProgressBar
+                   :inherits  :view
+                   :value-namespaces {:visibility android.view.View}}
+    :progress-bar-large {:inherits  :progress-bar
+                         :constructor-args [nil android.R$attr/progressBarStyleLarge]}
     :text-view {:classname android.widget.TextView
                 :inherits :view
                 :value-namespaces
@@ -51,7 +72,10 @@
                :inherits :view}
     :scroll-view {:classname android.widget.ScrollView
                   :inherits :view}
-
+    :gallery {:classname android.widget.Gallery
+              :inherits :view-group
+              :traits [:on-item-click]}
+    
     ;; Other
     :layout-params {:classname ViewGroup$LayoutParams
                     :values {:fill ViewGroup$LayoutParams/FILL_PARENT
@@ -73,12 +97,14 @@
    {android.widget.Button :button
     android.widget.LinearLayout :linear-layout
     android.widget.RelativeLayout :relative-layout
+    android.widget.FrameLayout :frame-layout
     android.widget.EditText :edit-text
     android.widget.TextView :text-view
     android.widget.ListView :list-view
     android.widget.ImageView :image-view
     android.webkit.WebView :web-view
     android.widget.ScrollView :scroll-view
+    android.widget.Gallery :gallery
     android.app.ProgressDialog :progress-dialog}))
 
 (defn set-classname!

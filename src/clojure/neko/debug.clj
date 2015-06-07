@@ -33,8 +33,7 @@
   [e]
   (reset! ui-exception e)
   (neko.log/e "Exception raised on UI thread." :exception e)
-  (when-let [ctx (:neko.context/context all-activities)]
-    (neko.notify/toast ctx (str e) :long)))
+  (neko.notify/toast (str e) :long))
 
 (defn ui-e
   "Returns an uncaught exception happened on UI thread."

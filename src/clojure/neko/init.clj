@@ -33,11 +33,6 @@
   (when-not @initialized?
     (alter-var-root #'neko.context/context (constantly context))
     (.put neko.debug/all-activities :neko.context/context context)
-    (alter-var-root #'neko.resource/package-name
-                    (constantly
-                     (let [^String pkg (.getPackageName ^Context context)]
-                       (if (.endsWith pkg ".debug")
-                         (subs pkg 0 (- (.length pkg) 6)) pkg))))
     (enable-dynamic-compilation context)
     ;; Ensure that `:port` is provided, pass all other arguments as-is.
     (start-nrepl-server port (mapcat identity (dissoc args :port)))

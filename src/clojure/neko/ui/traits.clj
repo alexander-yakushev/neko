@@ -9,7 +9,7 @@
   (:use [neko.-utils :only [memoized]])
   (:import [android.widget LinearLayout$LayoutParams ListView TextView SearchView
             ImageView RelativeLayout RelativeLayout$LayoutParams
-            AbsListView$LayoutParams]
+            AbsListView$LayoutParams FrameLayout$LayoutParams Gallery$LayoutParams]
            [android.view View ViewGroup$LayoutParams
             ViewGroup$MarginLayoutParams]
            android.graphics.Bitmap android.graphics.drawable.Drawable
@@ -138,8 +138,8 @@ next-level elements."
 ;; ### Basic traits
 
 (deftrait :text
-  "Sets widget's text to a string, integer ID or a keyword
-  representing the string resource provided to `:text` attribute."
+  "Sets widget's text to a string or a resource ID representing a string
+  resource provided to `:text` attribute."
   [^TextView wdg, {:keys [text] :or {text ""}} _]
   (.setText wdg ^CharSequence (res/get-string text)))
 
@@ -183,7 +183,6 @@ next-level elements."
   (condp instance? image
     Bitmap (.setImageBitmap wdg image)
     Drawable (.setImageDrawable wdg image)
-    Keyword (.setImageDrawable wdg (neko.resource/get-drawable image))
     Uri (.setImageURI wdg image)
     ;; Otherwise assume `image` to be resource ID.
     (.setImageResource wdg image)))
@@ -214,8 +213,7 @@ next-level elements."
                         (to-dimension (.getContext wdg)))
         ^int height (->> (or layout-height :wrap)
                          (kw/value :layout-params)
-                         (to-dimension (.getContext wdg)))
-        lp (RelativeLayout$LayoutParams. width height)]
+                         (to-dimension (.getContext wdg)))]
     (.setLayoutParams wdg (ViewGroup$LayoutParams. width height))))
 
 (deftrait :linear-layout-params
@@ -318,6 +316,43 @@ next-level elements."
            (AbsListView$LayoutParams. width height layout-view-type)
            (AbsListView$LayoutParams. width height)))))
 
+(deftrait :gallery-layout-params
+  {:attributes [:layout-width :layout-height]
+   :applies? (= container-type :gallery)}
+  [^View wdg, {:keys [layout-width layout-height]
+               :as attributes}
+   {:keys [container-type]}]
+  (let [^int width (->> (or layout-width :wrap)
+                        (kw/value :layout-params)
+                        (to-dimension (.getContext wdg)))
+        ^int height (->> (or layout-height :wrap)
+                         (kw/value :layout-params)
+                         (to-dimension (.getContext wdg)))]
+    (.setLayoutParams wdg (Gallery$LayoutParams. width height))))
+
+(deftrait :frame-layout-params
+  "Takes `:layout-width`, `:layout-height`, `:layout-gravity` and different
+  layout margin attributes and sets FrameLayout.LayoutParams if current
+  container is FrameLayout. Values could be either numbers of `:fill` or
+  `:wrap`." {:attributes (concat margin-attributes [:layout-width :layout-height
+                                                    :layout-gravity])
+             :applies? (= container-type :frame-layout)}
+  [^View wdg, {:keys [layout-width layout-height layout-gravity]
+               :as attributes}
+   {:keys [container-type]}]
+  (let [^int width (->> (or layout-width :wrap)
+                        (kw/value :layout-params)
+                        (to-dimension (.getContext wdg)))
+        ^int height (->> (or layout-height :wrap)
+                         (kw/value :layout-params)
+                         (to-dimension (.getContext wdg)))
+        params (FrameLayout$LayoutParams. width height)]
+    (apply-margins-to-layout-params (.getContext wdg) params attributes)
+    (when layout-gravity
+      (set! (. params gravity)
+            (kw/value :layout-params layout-gravity :gravity)))
+    (.setLayoutParams wdg params)))
+
 (deftrait :padding
   "Takes `:padding`, `:padding-bottom`, `:padding-left`,
   `:padding-right` and `:padding-top` and set element's padding
@@ -412,7 +447,7 @@ next-level elements."
   "Takes :on-editor-action attribute, which should be function
   of three arguments, and sets it as OnEditorAction for the
   TexView widget"
-  [^TextView wdg, {:keys [on-editor-action]}]
+  [^TextView wdg, {:keys [on-editor-action]} _]
   (.setOnEditorActionListener wdg (text-view-listeners/on-editor-action-call on-editor-action)))
 
 ;; ### ID storing traits

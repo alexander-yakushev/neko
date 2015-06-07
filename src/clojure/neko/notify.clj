@@ -1,25 +1,20 @@
 (ns neko.notify
   "Provides convenient wrappers for Toast and Notification APIs."
-  (:use [neko.context :only [context]])
-  (:import android.content.Context android.widget.Toast
-           android.app.Notification android.content.Intent
-           android.app.PendingIntent android.app.NotificationManager))
+  (:import [android.app Notification NotificationManager PendingIntent]
+           [android.content Context Intent]
+           android.widget.Toast
+           neko.App))
 
 ;; ### Toasts
 
 (defn toast
   "Creates a Toast object using a text message and a keyword representing how
-  long a toast should be visible (`:short` or `:long`). Two-argument version
-  takes only message and assumes length to be :long."
-  {:forms '([context message] [context message length])}
+  long a toast should be visible (`:short` or `:long`). If length is not
+  provided, it defaults to :long."
   ([message]
-     (println "One-argument version is deprecated. Please use (toast context message)")
-     (toast context message :long))
-  ([arg1 arg2]
-     (if (instance? Context arg1)
-       (toast arg1 arg2 :long)
-       (do (println "Context-less version is deprecated. Please use (toast context message length)")
-           (toast context arg1 arg2))))
+   (toast App/instance message :long))
+  ([message length]
+   (toast App/instance message length))
   ([^Context context, ^String message, length]
    {:pre [(or (= length :short) (= length :long))]}
    (.show
@@ -29,15 +24,10 @@
 
 ;; ### Notifications
 
-(def ^:private default-notification-icon (atom nil))
-
-(defn set-default-notification-icon! [icon]
-  (reset! default-notification-icon icon))
-
 (defn- ^NotificationManager notification-manager
   "Returns the notification manager instance."
-  [^Context context]
-  (.getSystemService context Context/NOTIFICATION_SERVICE))
+  ([^Context context]
+   (.getSystemService context Context/NOTIFICATION_SERVICE)))
 
 (defn construct-pending-intent
   "Creates a PendingIntent instance from a vector where the first
@@ -53,60 +43,31 @@
 (defn notification
   "Creates a Notification instance. If icon is not provided uses the
   default notification icon."
-  [& args]
-  (let [[context {:keys [icon ticker-text when content-title content-text action]
-                  :or {icon @default-notification-icon, when (System/currentTimeMillis)}}]
-        (if (instance? Context (first args))
-          [(first args) (apply hash-map (rest args))]
-          [context (apply hash-map args)])
-        notification (Notification. icon ticker-text when)]
-    (.setLatestEventInfo notification context content-title content-text
-                         (construct-pending-intent context action))
-    notification))
-
-;; This atom stores the mapping of keywords to integer IDs that
-;; represent the notification IDs.
-;;
-(def ^:private notification-ids (atom {}))
-
-;; A simple counter that will increment by one after each call.
-;;
-(def ^:private new-id
-  (let [ctr (atom 0)]
-    (fn []
-      (swap! ctr inc)
-      @ctr)))
+  ([options]
+   (notification App/instance options))
+  ([context {:keys [icon ticker-text when content-title content-text action]
+             :or {icon android.R$drawable/ic_dialog_info
+                  when (System/currentTimeMillis)}}]
+   (let [notification (Notification. icon ticker-text when)]
+     (.setLatestEventInfo notification context content-title content-text
+                          (construct-pending-intent context action))
+     notification)))
 
 (defn fire
-  "Sends the notification to the status bar. ID is optional and could be
-  either an integer or a keyword."
-  {:forms '([context notification] [context id notification])}
-  ([notification]
-     (println "One-argument version is deprecated. Please use (fire context notification)")
-     (.notify (notification-manager context) (new-id) notification))
-  ([arg1 arg2]
-     (if (instance? Context arg1)
-       (.notify (notification-manager arg1) (new-id) arg2)
-       (do (println "Context-less version is deprecated. Please use (fire context id notification)")
-           (fire context arg1 arg2))))
+  "Sends the notification to the status bar. ID can be an integer or a keyword."
+  ([id notification]
+   (fire App/instance id notification))
   ([context id notification]
-     (let [id (if (keyword? id)
-                (if (contains? @notification-ids id)
-                  (@notification-ids id)
-                  (let [number-id (new-id)]
-                    (swap! notification-ids assoc id number-id)
-                    number-id))
-                id)]
-       (.notify (notification-manager context) id notification))))
+   (let [id (if (keyword? id)
+              (Math/abs (.hashCode id))
+              id)]
+     (.notify (notification-manager context) id notification))))
 
 (defn cancel
   "Removes a notification by the given ID from the status bar."
-  {:forms '([context id])}
   ([id]
-     (println "One-argument version is deprecated. Please use (cancel context id)")
-     (cancel context id))
+   (cancel App/instance id))
   ([context id]
-     (let [id (if (keyword? id)
-                (@notification-ids id)
-                id)]
-       (.cancel (notification-manager context) id))))
+   (.cancel (notification-manager context) (if (keyword? id)
+                                             (Math/abs (.hashCode id))
+                                             id))))

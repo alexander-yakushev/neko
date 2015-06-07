@@ -1,10 +1,9 @@
 (ns neko.ui
   "Tools for defining and manipulating Android UI elements."
-  (:use [neko.-utils :only [keyword->setter reflect-setter reflect-constructor]]
-        [neko.listeners.view :only [on-click-call]]
-        [neko.ui.traits :only [apply-trait]])
   (:require [neko.ui.mapping :as kw]
-            [neko.context :as context]))
+            [neko.ui.traits :refer [apply-trait]]
+            [neko.-utils :refer [keyword->setter reflect-setter
+                                 reflect-constructor]]))
 
 ;; ## Attributes
 
@@ -87,12 +86,8 @@
   following:
 
   `[element-name map-of-attributes & subelements]`."
-  {:forms '([activity tree])}
-  ([tree]
-     (println "One-argument version is deprecated. Please use (make-ui activity tree)")
-     (make-ui-element context/context tree {}))
-  ([activity tree]
-     (make-ui-element activity tree {})))
+  [activity tree]
+  (make-ui-element activity tree {}))
 
 (defn config
   "Takes a widget and key-value pairs of attributes, and applies these
@@ -100,3 +95,15 @@
   [widget & {:as attributes}]
   (apply-attributes (kw/keyword-by-classname (type widget))
                     widget attributes {}))
+
+;; ## Compatibility with Android XML UI facilities.
+
+(defn inflate-layout
+  "Renders a View object for the given XML layout ID."
+  [activity id]
+  {:pre [(integer? id)]
+   :post [(instance? android.view.View %)]}
+  (.. android.view.LayoutInflater
+      (from activity)
+      (inflate ^Integer id nil)))
+

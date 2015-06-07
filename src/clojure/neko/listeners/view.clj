@@ -19,6 +19,7 @@
   "Takes a function and yields a View.OnClickListener object that will invoke
   the function.  This function must take one argument, the view that was
   clicked."
+  ^android.view.View$OnClickListener
   [handler-fn]
   (reify android.view.View$OnClickListener
     (onClick [this view]
@@ -40,6 +41,7 @@
   view: the view for which the context menu is being built
   info: extra information about the item for which the context menu should be
         shown.  This information will vary depending on the class of view."
+  ^android.view.View$OnCreateContextMenuListener
   [handler-fn]
   (reify android.view.View$OnCreateContextMenuListener
     (onCreateContextMenu [this menu view info]
@@ -62,6 +64,7 @@
   "Takes a function and yields a View.OnDragListener object that will invoke
   the function.  This function must take the two arguments described in
   on-drag and should return a boolean."
+  ^android.view.View$OnDragListener
   [handler-fn]
   (reify android.view.View$OnDragListener
     (onDrag [this view event]
@@ -82,6 +85,7 @@
 
   view:     the view whose state has changed
   focused?: the new focused state for view"
+  ^android.view.View$OnFocusChangeListener
   [handler-fn]
   (reify android.view.View$OnFocusChangeListener
     (onFocusChange [this view focused?]
@@ -107,6 +111,7 @@
 
   The function should evaluate to a logical true value if it has consumed the
   event, otherwise logical false."
+  ^android.view.View$OnKeyListener
   [handler-fn]
   (reify android.view.View$OnKeyListener
     (onKey [this view key-code event]
@@ -130,6 +135,7 @@
   "Takes a function and yields a View.OnLayoutChangeListener object that
   will invoke the function.  This function must take the arguments  described
   in on-layout-change."
+  ^android.view.View$OnLayoutChangeListener
   [handler-fn]
   (reify android.view.View$OnLayoutChangeListener
     (onLayoutChange [this view left top right bottom
@@ -160,6 +166,7 @@
   invoke the function.  This function must take one argument, the view that was
   clicked, and must evaluate to a logical true value if it has consumed the
   long click, otherwise logical false."
+  ^android.view.View$OnLongClickListener
   [handler-fn]
   (reify android.view.View$OnLongClickListener
     (onLongClick [this view]
@@ -179,6 +186,7 @@
   that will invoke the function.  This function must take one argument, the
   view that was clicked, and must evaluate to true if it has consumed the long
   click, false otherwise."
+  ^android.view.View$OnSystemUiVisibilityChangeListener
   [handler-fn]
   (reify android.view.View$OnSystemUiVisibilityChangeListener
     (onLongClick [this view]
@@ -201,6 +209,7 @@
 
   The function should evaluate to a logical true value if it consumes the
   event, otherwise logical false."
+  ^android.view.View$OnTouchListener
   [handler-fn]
   (reify android.view.View$OnTouchListener
     (onTouch [this view event]

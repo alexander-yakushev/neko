@@ -19,9 +19,8 @@
   it is immutable.  Using the protocol with an AlertDialog.Builder object works
   by mutating the object."
   {:author "Daniel Solano Gómez"}
-  (:import android.app.AlertDialog$Builder)
-  (:use neko.context)
-  )
+  (:import android.app.AlertDialog$Builder
+           neko.App))
 
 (defprotocol AlertDialogBuilder
   "Defines the functionality needed to build new alert dialogues."
@@ -82,4 +81,4 @@
   "Creates a new functional alert dialog builder."
   []
   {:post [(instance? FunctionalAlertDialogBuilder %)]}
-  (FunctionalAlertDialogBuilder. context true))
+  (FunctionalAlertDialogBuilder. App/instance true))

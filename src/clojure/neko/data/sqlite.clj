@@ -5,12 +5,12 @@
   provides."
   (:refer-clojure :exclude [update])
   (:require [clojure.string :as string])
-  (:use [neko.context :only [context]])
   (:import [android.database.sqlite SQLiteDatabase]
            [neko.data.sqlite SQLiteHelper TaggedCursor]
            [android.database Cursor CursorIndexOutOfBoundsException]
            [android.content ContentValues Context]
-           [clojure.lang Keyword PersistentVector]))
+           [clojure.lang Keyword PersistentVector]
+           neko.App))
 
 ;; ### Database initialization
 
@@ -79,10 +79,8 @@
 
   Helper will recreate database if the current schema version and
   database version mismatch."
-  {:forms '([context schema])}
   ([schema]
-   (println "One-argument version is deprecated. Please use (create-helper context schema)")
-   (create-helper context schema))
+   (create-helper App/instance schema))
   ([^Context context, {:keys [name version tables] :as schema}]
    (SQLiteHelper. (.getApplicationContext context) name version schema
                   (for [table (keys tables)]
@@ -96,21 +94,14 @@
 (deftype TaggedDatabase [^SQLiteDatabase db, schema])
 
 (defn get-database
-  "Returns SQLiteDatabase instance for the given schema or helper. Access-mode
-  can be either `:read` or `:write`."
-  {:forms '([context schema-or-helper access-mode])}
-  ([^SQLiteHelper helper, access-mode]
-   {:pre [(#{:read :write} access-mode)]}
-   (if (instance? SQLiteHelper helper)
-     (TaggedDatabase. (case access-mode
-                        :read (.getReadableDatabase helper)
-                        :write (.getWritableDatabase helper))
-                      (.schema helper))
-     (do (println "Context-less version version is deprecated.
-Please use (get-database context schema access-mode) or (get-database helper access-mode)")
-         (get-database context helper access-mode))))
-  ([context schema access-mode]
-   (get-database (create-helper context schema) access-mode)))
+  "Gets a SQLiteDatabase instance from the given helper. Access-mode can be
+  either `:read` or `:write`."
+  [^SQLiteHelper helper, access-mode]
+  {:pre [(#{:read :write} access-mode)]}
+  (TaggedDatabase. (case access-mode
+                     :read (.getReadableDatabase helper)
+                     :write (.getWritableDatabase helper))
+                   (.schema helper)))
 
 ;; ### Data-SQL transformers
 

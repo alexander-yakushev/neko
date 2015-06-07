@@ -23,7 +23,6 @@
   Note that additional invocations to init within the same process will not have
   any effect."
   {:author "Daniel Solano Gómez"}
-  (:use [neko.resource :only [get-resource]])
   (:import android.content.Context
            [java.io File FileNotFoundException]))
 

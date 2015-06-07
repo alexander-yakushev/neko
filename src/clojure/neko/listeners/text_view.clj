@@ -30,6 +30,7 @@
   The function should evaluate to a logical true value if it has consumed the
   action, otherwise logical false."
   [handler-fn]
+  ^android.widget.TextView$OnEditorActionListener
   {:pre  [(fn? handler-fn)]
    :post [(instance? android.widget.TextView$OnEditorActionListener %)]}
   (reify android.widget.TextView$OnEditorActionListener

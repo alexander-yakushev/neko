@@ -24,6 +24,7 @@
   view      the view within the AdapterView that was clicked
   position  the position of the view in the adapter
   id        the row id of the item that was clicked"
+  ^android.widget.AdapterView$OnItemClickListener
   [handler-fn]
   {:pre  [(fn? handler-fn)]
    :post [(instance? android.widget.AdapterView$OnItemClickListener %)]}
@@ -55,6 +56,7 @@
 
   The function should evaluate to a logical true value if it has consumed the
   long click; otherwise logical false."
+  ^android.widget.AdapterView$OnItemLongClickListener
   [handler-fn]
   {:pre  [(fn? handler-fn)]
    :post [(instance? android.widget.AdapterView$OnItemLongClickListener %)]}
@@ -94,7 +96,8 @@
    {:pre  [(fn? item-fn)]
     :post [(instance? android.widget.AdapterView$OnItemSelectedListener %)]}
    (on-item-selected-call item-fn nil))
-  ([item-fn nothing-fn]
+  (^android.widget.AdapterView$OnItemSelectedListener
+   [item-fn nothing-fn]
    {:pre  [(fn? item-fn)
            (or (nil? nothing-fn)
                (fn? nothing-fn))]
