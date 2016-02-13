@@ -4,9 +4,9 @@
   elements and the values for the keywords representing values."
   (:require [clojure.string :as string])
   (:use [neko.-utils :only [keyword->static-field reflect-field]])
-  (:import [android.widget LinearLayout Button EditText ListView SearchView
-            ImageView ImageView$ScaleType RelativeLayout ScrollView FrameLayout
-            Gallery GridView]
+  (:import [android.widget LinearLayout Button CheckBox EditText ListView
+            SearchView ImageView ImageView$ScaleType RelativeLayout ScrollView
+            FrameLayout Gallery GridView]
            android.app.ProgressDialog
            android.view.inputmethod.EditorInfo
            [android.view View ViewGroup$LayoutParams Gravity]))
@@ -29,6 +29,8 @@
     :button {:classname android.widget.Button
              :inherits :text-view
              :attributes {:text "Default button"}}
+    :check-box {:classname android.widget.CheckBox
+                :inherits :text-view}
     :linear-layout {:classname android.widget.LinearLayout
                     :inherits :view-group}
     :relative-layout {:classname android.widget.RelativeLayout
