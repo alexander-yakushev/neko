@@ -15,7 +15,7 @@
                                     symbol))
                       (catch ClassNotFoundException _# nil)))
               '[anim drawable color layout menu string array plurals style id
-                dimen])))
+                dimen raw])))
 
 (import-all)
 ;; ## Runtime resource resolution
