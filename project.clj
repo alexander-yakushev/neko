@@ -6,10 +6,11 @@
 
   :dependencies [[org.clojure-android/clojure "1.7.0-r2"]
                  [com.android.support/multidex "1.0.0" :extension "aar"]]
-  :plugins [[lein-droid "0.4.1-SNAPSHOT"]]
+  :plugins [[lein-droid "0.4.6"]]
 
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
+  :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
 
   :profiles {:default [:android-common]
 

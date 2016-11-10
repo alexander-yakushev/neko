@@ -413,6 +413,12 @@ next-level elements."
   [^View wdg, {:keys [on-touch]} _]
   (.setOnTouchListener wdg (view-listeners/on-touch-call on-touch)))
 
+(deftrait :on-drag
+  "Takes :on-drag attribute, which should be function of two
+  arguments, and sets it as an OnDragListener for the widget."
+  [^View wdg, {:keys [on-drag]} _]
+  (.setOnDragListener wdg (view-listeners/on-drag-call on-drag)))
+
 (deftrait :on-query-text
   "Takes `:on-query-text-change` and `:on-query-text-submit`
   attributes, which should be functions of one or two arguments,

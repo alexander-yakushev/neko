@@ -59,7 +59,6 @@
   [& body]
   `(on-create-context-menu-call (fn [~'menu ~'view ~'info] ~@body)))
 
-(comment -- Introduced in SDK version 11 (Honeycomb)
 (defn on-drag-call
   "Takes a function and yields a View.OnDragListener object that will invoke
   the function.  This function must take the two arguments described in
@@ -77,7 +76,7 @@
   view:  the view that received the drag event
   event: the DragEvent object for the drag event"
   [& body]
-  `(on-drag-call (fn [~'view ~'event] ~@body))))
+  `(on-drag-call (fn [~'view ~'event] ~@body)))
 
 (defn on-focus-change-call
   "Takes a function and yields a View.OnFocusChangeListener object that will
