@@ -128,3 +128,12 @@
                                (.getName m)))
                            (.getDeclaredMethods c))))
       methods)))
+
+(defn closest-android-ancestor
+  [^Class c]
+  (loop [c c]
+    (when c
+      (if-let [cand-name
+               (re-find #"^class (android\..*)" (str c))]
+        (Class/forName (second cand-name))
+        (recur (.getSuperclass c))))))

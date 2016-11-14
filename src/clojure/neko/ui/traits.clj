@@ -6,7 +6,7 @@
             [neko.listeners.text-view :as text-view-listeners]
             [neko.listeners.adapter-view :as adapter-view]
             neko.listeners.search-view
-            [neko.-utils :refer [memoized int-id]])
+            [neko.-utils :refer [memoized int-id closest-android-ancestor]])
   (:import [android.widget LinearLayout$LayoutParams ListView TextView SearchView
             ImageView RelativeLayout RelativeLayout$LayoutParams AdapterView
             AbsListView$LayoutParams FrameLayout$LayoutParams Gallery$LayoutParams]
@@ -367,7 +367,7 @@ next-level elements."
   use the container type to choose the correct LayoutParams instance."
   {:applies? (constantly true)}
   [wdg _ __]
-  (let [kw (kw/keyword-by-classname (type wdg))
+  (let [kw (kw/keyword-by-classname (closest-android-ancestor (class wdg)))
         container-type (-> (kw/get-keyword-mapping) kw :container-type)]
     {:options-fn #(assoc % :container-type (or container-type kw))}))
 
