@@ -1,6 +1,8 @@
 (ns neko.t-utils
   (:require [clojure.test :refer :all]
-            [neko.-utils :as u]))
+            [neko.-utils :as u])
+  (:import android.app.Activity
+           android.widget.LinearLayout))
 
 (deftest int-id
   (is (= (u/int-id :foo) (u/int-id :foo)))
@@ -55,3 +57,8 @@
         c (System/currentTimeMillis)]
     (is (< 300 (- b a)))
     (is (> 100 (- c b)))))
+
+(deftest closest-android-ancestor
+  (let [ctx (Activity.)]
+    (is (= (u/closest-android-ancestor (class (proxy [LinearLayout] [ctx])))
+           android.widget.LinearLayout))))
