@@ -3,7 +3,8 @@
   (:require [neko.ui.mapping :as kw]
             [neko.ui.traits :refer [apply-trait]]
             [neko.-utils :refer [keyword->setter reflect-setter
-                                 reflect-constructor]])
+                                 reflect-constructor
+                                 closest-android-ancestor]])
   (:import android.content.res.Configuration
            neko.App))
 
@@ -95,7 +96,8 @@
   "Takes a widget and key-value pairs of attributes, and applies these
   attributes to the widget."
   [widget & {:as attributes}]
-  (apply-attributes (kw/keyword-by-classname (type widget))
+  (apply-attributes (kw/keyword-by-classname (closest-android-ancestor
+                                               (class widget)))
                     widget attributes {}))
 
 ;; ## Compatibility with Android XML UI facilities.
