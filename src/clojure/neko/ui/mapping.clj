@@ -172,19 +172,18 @@
   keyword can be extracted from :value-namespaces map for element's
   mapping."
   [element-kw value & [attribute]]
-  (let [mapping @keyword-mapping]
-    (if-not (keyword? value)
-      (cond
-       (integer? value) (int value)
-       (float? value) (float value)
-       :else value)
-      (or (recursive-find (list element-kw :values value))
-          (reflect-field
-           (classname
-            (or (and attribute
-                     (recursive-find [element-kw :value-namespaces attribute]))
-                element-kw))
-           (keyword->static-field value))))))
+  (if-not (keyword? value)
+    (cond
+     (integer? value) (int value)
+     (float? value) (float value)
+     :else value)
+    (or (recursive-find (list element-kw :values value))
+        (reflect-field
+         (classname
+          (or (and attribute
+                   (recursive-find [element-kw :value-namespaces attribute]))
+              element-kw))
+         (keyword->static-field value)))))
 
 (defn add-default-atribute-value!
   "Adds a default attribute value for the given element."
