@@ -6,6 +6,7 @@
   (:import [android.widget Button LinearLayout TextView]
            android.content.pm.ActivityInfo
            android.view.View
+           android.widget.LinearLayout
            neko.App
            [org.robolectric Robolectric RuntimeEnvironment]))
 
@@ -72,12 +73,20 @@
       (is (= "hello" (.getText b))))))
 
 (deftest config
-  (let [v (ui/make-ui RuntimeEnvironment/application [:button {:text "hello"}])]
+  (let [v (ui/make-ui RuntimeEnvironment/application [:button {:text "hello"}])
+        ll (ui/make-ui RuntimeEnvironment/application
+                       [:linear-layout {:custom-constructor
+                                        (fn [ctx]
+                                          (proxy [LinearLayout] [ctx]))
+                                        :orientation :vertical}])]
     (is (= View/VISIBLE (.getVisibility v)))
     (is (= "hello" (.getText v)))
     (ui/config v :text "updated" :visibility View/GONE)
     (is (= "updated" (.getText v)))
-    (is (= View/GONE (.getVisibility v)))))
+    (is (= View/GONE (.getVisibility v)))
+    (is (= LinearLayout/VERTICAL(.getOrientation ll)))
+    (ui/config ll :orientation :horizontal)
+    (is (= LinearLayout/HORIZONTAL (.getOrientation ll)))))
 
 (deftest inflate-layout
   (is (instance? TextView (ui/inflate-layout RuntimeEnvironment/application
