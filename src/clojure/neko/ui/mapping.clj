@@ -98,20 +98,11 @@
 
 (def ^{:private true} reverse-mapping
   (atom
-   {android.widget.Button :button
-    android.widget.LinearLayout :linear-layout
-    android.widget.RelativeLayout :relative-layout
-    android.widget.FrameLayout :frame-layout
-    android.widget.EditText :edit-text
-    android.widget.TextView :text-view
-    android.widget.ListView :list-view
-    android.widget.ImageView :image-view
-    android.webkit.WebView :web-view
-    android.widget.ScrollView :scroll-view
-    android.widget.Gallery :gallery
-    android.widget.GridView :grid-view
-    android.widget.ProgressBar :progress-bar
-    android.app.ProgressDialog :progress-dialog}))
+    (into {}
+      (keep (fn [[kw {classname :classname}]]
+              (when classname
+                [classname kw]))
+            (get-keyword-mapping)))))
 
 (defn set-classname!
   "Connects the given keyword to the classname."
